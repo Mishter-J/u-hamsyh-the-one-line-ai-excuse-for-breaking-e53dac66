@@ -7,7 +7,10 @@ right after breaking production, to /output/entry.txt.
 The line was chosen from 12 original candidates with local
 deterministic scoring (select/local_score.py, archetype one-liner)
 and pairwise selection (select/pairwise_judge.py). Winner scored
-62.3, above the >= 60 submit threshold:
+62.3, above the >= 60 submit threshold. It satisfies the sealed
+gate in RULES.txt: /output/entry.txt is UTF-8 text of 1 to 180
+characters, not only white space, a single line -- main() validates
+all of that and fails loudly before writing.
 
     Good news: I found the bug. Bad news: it's me, and I've already
     merged myself into main.
@@ -28,10 +31,24 @@ EXCUSE = (
 )
 
 
+MAX_CHARS = 180
+
+
 def main() -> None:
+    # Gate (RULES.txt): /output/entry.txt must be UTF-8 text of 1 to
+    # 180 characters, not only white space, and a single line.
+    line = EXCUSE.strip()
+    if not line:
+        raise ValueError("excuse is blank")
+    if "\n" in line or "\r" in line:
+        raise ValueError("excuse must be a single line")
+    if len(line) > MAX_CHARS:
+        raise ValueError(
+            f"excuse is {len(line)} chars, over the {MAX_CHARS}-char gate"
+        )
     os.makedirs("/output", exist_ok=True)
     with open("/output/entry.txt", "w", encoding="utf-8") as f:
-        f.write(EXCUSE)
+        f.write(line)
 
 
 if __name__ == "__main__":
